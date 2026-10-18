@@ -60,7 +60,9 @@ All routes are under `/api`, and every route except auth needs `Authorization: B
 |---|---|---|
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | Accounts. A role is `candidate` or `employer` |
 | GET / PUT | `/me`, `/me/profile` | Your account and profile |
+| GET | `/me/summary` | Counts for the navigation badges: likes waiting, chats where it's your turn, upcoming interviews |
 | GET / POST / PUT | `/jobs/mine`, `/jobs`, `/jobs/:id` | Employers manage their adverts |
+| GET | `/jobs/pipeline` | Each role's progress: to review, liked you, matches, interviews |
 | GET | `/feed` (`?jobId=` for employers) | Ranked cards you haven't decided on yet |
 | GET | `/likes` | People waiting on your decision |
 | POST | `/swipes` | `{ jobId, candidateId?, decision, standout?, likedSection?, note? }` returns any match |

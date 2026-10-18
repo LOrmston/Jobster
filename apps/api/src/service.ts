@@ -1,5 +1,7 @@
 import {
   computeMatch,
+  type AttentionSummary,
+  type JobPipeline,
   INTERVIEW_FORMAT_LABELS,
   type CandidateFeedItem,
   type InterviewProposalInput,
@@ -298,4 +300,35 @@ export function unmatch(store: Store, user: StoredUser, matchId: string): void {
   match.status = 'unmatched';
   match.unmatchedBy = user.role;
   store.save();
+}
+
+const upcoming = (match: Match) =>
+  match.interview?.status === 'scheduled' && Date.parse(match.interview.chosenSlot!) > Date.now();
+
+export function attentionSummary(store: Store, user: StoredUser): AttentionSummary {
+  const matches = matchSummaries(store, user);
+  return {
+    likes: likesFor(store, user).length,
+    yourTurn: matches.filter((m) => m.yourTurn).length,
+    upcomingInterviews: matches.filter((m) => upcoming(m.match)).length,
+  };
+}
+
+/** Per-role progress for an employer: who's left to review, who's keen, who's matched. */
+export function jobPipeline(store: Store, employerId: string): JobPipeline[] {
+  requireEmployer(store, employerId);
+  const likes = likesFor(store, store.user(employerId)!);
+  return store.data.jobs
+    .filter((job) => job.employerId === employerId)
+    .sort((a, b) => Number(b.active) - Number(a.active) || b.createdAt.localeCompare(a.createdAt))
+    .map((job) => {
+      const matches = store.data.matches.filter((m) => m.jobId === job.id && m.status === 'active');
+      return {
+        job,
+        toReview: job.active ? employerFeed(store, employerId, job.id).length : 0,
+        likedYou: likes.filter((l) => l.job.id === job.id).length,
+        matches: matches.length,
+        interviews: matches.filter(upcoming).length,
+      };
+    });
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { formatSalary, JOB_TYPE_LABELS, WORK_MODE_LABELS, type Job, type JobInput } from '@jobster/shared';
+import { formatSalary, JOB_TYPE_LABELS, WORK_MODE_LABELS, type Job, type JobInput, type JobPipeline } from '@jobster/shared';
 import { api } from '../api';
 import { JobForm } from '../forms/JobForm';
 import { useEmployer } from '../session';
@@ -8,47 +8,73 @@ import { errorToast, toast } from '../toast';
 
 const toInput = ({ id: _id, employerId: _e, createdAt: _c, ...rest }: Job): JobInput => rest;
 
+/** An employer's roles, each with its hiring pipeline at a glance. */
 export function Jobs() {
-  const [jobs, setJobs] = useState<Job[] | null>(null);
+  const [pipeline, setPipeline] = useState<JobPipeline[] | null>(null);
+  const load = () => api.pipeline().then(setPipeline, errorToast);
 
   useEffect(() => {
-    api.myJobs().then(setJobs, errorToast);
+    void load();
   }, []);
 
   const toggle = async (job: Job) => {
     try {
-      const updated = await api.updateJob(job.id, { ...toInput(job), active: !job.active });
-      setJobs((list) => list!.map((j) => (j.id === job.id ? updated : j)));
+      await api.updateJob(job.id, { ...toInput(job), active: !job.active });
+      toast(job.active ? `${job.title} paused` : `${job.title} is live`);
+      void load();
     } catch (err) {
       errorToast(err);
     }
   };
 
-  if (!jobs) return <p className="loading">Loading jobs…</p>;
+  if (!pipeline) return <p className="loading">Loading roles…</p>;
 
   return (
     <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">Your jobs</h1>
-        <Link to="/jobs/new" className="btn btn-primary btn-small">
-          + Post a job
+      <header className="page-head page-head-row">
+        <div>
+          <h1 className="page-title">Your roles</h1>
+          <p className="muted">How hiring is going for each role.</p>
+        </div>
+        <Link to="/jobs/new" className="btn btn-primary">
+          Post a role
         </Link>
-      </div>
-      {jobs.length === 0 && <p className="muted">No jobs yet. Post one to start matching with candidates.</p>}
-      <ul className="job-list">
-        {jobs.map((job) => (
-          <li key={job.id} className={`panel job-row${job.active ? '' : ' job-row-paused'}`}>
-            <div>
-              <strong>{job.title}</strong>
-              <div className="muted small">
-                {formatSalary(job.salaryMin, job.salaryMax)} · {WORK_MODE_LABELS[job.workMode]} · {JOB_TYPE_LABELS[job.jobType]} · {job.location}
+      </header>
+      {pipeline.length === 0 && <p className="muted">No roles yet. Post one to start matching with candidates.</p>}
+      <ul className="role-list">
+        {pipeline.map(({ job, toReview, likedYou, matches, interviews }) => (
+          <li key={job.id} className={`panel role-card${job.active ? '' : ' role-card-paused'}`}>
+            <div className="role-card-head">
+              <div>
+                <h2 className="role-title">{job.title}</h2>
+                <p className="muted small">
+                  {formatSalary(job.salaryMin, job.salaryMax)} · {WORK_MODE_LABELS[job.workMode]} · {JOB_TYPE_LABELS[job.jobType]} · {job.location}
+                </p>
               </div>
               <span className={`status ${job.active ? 'status-booked' : 'status-pending'}`}>{job.active ? 'Live' : 'Paused'}</span>
             </div>
+            <dl className="pipeline">
+              <Link to={`/?job=${job.id}`} className="stage">
+                <dt>To review</dt>
+                <dd>{toReview}</dd>
+              </Link>
+              <Link to={`/likes?role=${job.id}`} className="stage">
+                <dt>Liked you</dt>
+                <dd>{likedYou}</dd>
+              </Link>
+              <Link to={`/matches?role=${job.id}`} className="stage">
+                <dt>Matches</dt>
+                <dd>{matches}</dd>
+              </Link>
+              <Link to={`/matches?role=${job.id}`} className="stage">
+                <dt>Interviews</dt>
+                <dd>{interviews}</dd>
+              </Link>
+            </dl>
             <div className="row">
-              {job.active && (
+              {job.active && toReview > 0 && (
                 <Link to={`/?job=${job.id}`} className="btn btn-primary btn-small">
-                  Find candidates
+                  Review {toReview} candidate{toReview === 1 ? '' : 's'}
                 </Link>
               )}
               <Link to={`/jobs/${job.id}`} className="btn btn-ghost btn-small">
@@ -82,7 +108,7 @@ export function JobEditor() {
   const save = async (input: JobInput) => {
     try {
       const saved = job ? await api.updateJob(job.id, input) : await api.createJob(input);
-      toast(job ? 'Job updated' : 'Job posted — here are your best matches');
+      toast(job ? 'Role updated' : 'Role posted. Here are your best matches');
       navigate(job ? '/jobs' : `/?job=${saved.id}`);
     } catch (err) {
       errorToast(err);
@@ -92,10 +118,10 @@ export function JobEditor() {
   return (
     <div className="page">
       <Link to="/jobs" className="link">
-        ‹ Your jobs
+        ‹ Your roles
       </Link>
-      <h1 className="page-title">{job ? 'Edit job' : 'Post a job'}</h1>
-      <JobForm initial={job ?? undefined} defaults={employer} submitLabel={job ? 'Save changes' : 'Post job'} onSubmit={save} />
+      <h1 className="page-title">{job ? 'Edit role' : 'Post a role'}</h1>
+      <JobForm initial={job ?? undefined} defaults={employer} submitLabel={job ? 'Save changes' : 'Post role'} onSubmit={save} />
     </div>
   );
 }

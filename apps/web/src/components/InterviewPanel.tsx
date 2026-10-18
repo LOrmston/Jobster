@@ -9,6 +9,7 @@ import {
   type Role,
 } from '@jobster/shared';
 import { api } from '../api';
+import { CalendarIcon } from './icons';
 import { formatSlot, interviewIcs, toLocalInput } from '../format';
 import { errorToast } from '../toast';
 
@@ -67,8 +68,8 @@ export function InterviewPanel({ detail, role, onChange }: Props) {
     return (
       <div className="interview interview-booked">
         <div className="interview-head">
-          <span className="interview-emoji" aria-hidden>
-            📅
+          <span className="interview-icon">
+            <CalendarIcon size={26} />
           </span>
           <div>
             <strong>Interview booked</strong>

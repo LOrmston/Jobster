@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { MatchDetail } from '@jobster/shared';
 import { api } from '../api';
 import { CandidateAvatar, CompanyLogo } from '../components/Avatar';
+import { BackIcon } from '../components/icons';
 import { CandidateProfileView } from '../components/CandidateProfileView';
 import { InterviewPanel } from '../components/InterviewPanel';
 import { JobProfile } from '../components/JobProfile';
@@ -12,6 +13,12 @@ import { useSession } from '../session';
 import { errorToast, toast } from '../toast';
 
 const POLL_MS = 4000;
+
+/** Remount per conversation so drafts and scroll position don't leak between chats. */
+export function MatchChatRoute() {
+  const { id } = useParams<{ id: string }>();
+  return <MatchChat key={id} />;
+}
 
 export function MatchChat() {
   const { id } = useParams<{ id: string }>();
@@ -77,7 +84,7 @@ export function MatchChat() {
     <div className="chat">
       <header className="chat-head">
         <Link to="/matches" className="back" aria-label="Back to matches">
-          ‹
+          <BackIcon />
         </Link>
         <button type="button" className="chat-who" onClick={() => setShowProfile(true)}>
           {role === 'candidate' ? <CompanyLogo employer={detail.employer} size={40} /> : <CandidateAvatar candidate={detail.candidate} size={40} />}
@@ -88,7 +95,10 @@ export function MatchChat() {
             </span>
           </span>
         </button>
-        <button type="button" className="link danger" onClick={unmatch}>
+        <button type="button" className="btn btn-ghost btn-small" onClick={() => setShowProfile(true)}>
+          Profile
+        </button>
+        <button type="button" className="link muted small" onClick={unmatch}>
           Unmatch
         </button>
       </header>
@@ -124,7 +134,7 @@ export function MatchChat() {
             {role === 'candidate' ? (
               <JobProfile job={detail.job} employer={detail.employer} match={detail.compatibility} />
             ) : (
-              <CandidateProfileView candidate={detail.candidate} match={detail.compatibility} jobTitle={detail.job.title} />
+              <CandidateProfileView candidate={detail.candidate} match={detail.compatibility} />
             )}
           </div>
           <button type="button" className="btn btn-ghost" onClick={() => setShowProfile(false)}>

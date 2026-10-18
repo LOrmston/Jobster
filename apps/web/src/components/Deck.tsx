@@ -17,6 +17,8 @@ interface Props<T> {
   keyOf(item: T): string;
   recipientName(item: T): string;
   render(item: T, onLikeSection: (label: string) => void): ReactNode;
+  /** Shown beside the card on wide screens, e.g. the full match breakdown. */
+  aside?(item: T): ReactNode;
   decide(item: T, decision: 'like' | 'pass', extras: LikeExtras): Promise<SwipeResponse>;
   onMatch(item: T, response: SwipeResponse): void;
   likeLabel: string;
@@ -25,7 +27,7 @@ interface Props<T> {
 }
 
 /** A stack of profiles: swipe or tap to decide, heart a section to like it with a comment. */
-export function Deck<T>({ items, keyOf, recipientName, render, decide, onMatch, likeLabel, passLabel, empty }: Props<T>) {
+export function Deck<T>({ items, keyOf, recipientName, render, aside, decide, onMatch, likeLabel, passLabel, empty }: Props<T>) {
   const { standoutsRemaining, refresh } = useSession();
   const [queue, setQueue] = useState(items);
   const [likeSection, setLikeSection] = useState<string | null>(null);
@@ -81,13 +83,18 @@ export function Deck<T>({ items, keyOf, recipientName, render, decide, onMatch, 
           {render(current, setLikeSection)}
         </SwipeCard>
       </div>
-      <ActionBar
-        onPass={() => swipe('left')}
-        onLike={() => swipe('right')}
-        onStandout={() => swipe('right', { standout: true })}
-        standoutsRemaining={standoutsRemaining}
-        likeLabel={likeLabel}
-      />
+      <aside className="deck-aside">
+        {aside && <div className="deck-aside-info">{aside(current)}</div>}
+        <ActionBar
+          onPass={() => swipe('left')}
+          onLike={() => swipe('right')}
+          onStandout={() => swipe('right', { standout: true })}
+          standoutsRemaining={standoutsRemaining}
+        />
+        <p className="deck-hint">
+          Drag the card, or use ← and → · Heart any section to comment · {queue.length} left
+        </p>
+      </aside>
       {likeSection && (
         <LikeModal
           section={likeSection}

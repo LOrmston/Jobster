@@ -66,6 +66,8 @@ export function createApp(store: Store) {
     return c.json({ user: publicUser(user), profile: profile ?? null, standoutsRemaining: service.standoutsRemaining(store, user) });
   });
 
+  app.get('/api/me/summary', auth, (c) => c.json(service.attentionSummary(store, currentUser(c))));
+
   app.put('/api/me/profile', auth, async (c) => {
     const user = currentUser(c);
     const body = await readJson(c);
@@ -87,6 +89,8 @@ export function createApp(store: Store) {
     const user = currentUser(c, 'employer');
     return c.json(store.data.jobs.filter((j) => j.employerId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
   });
+
+  app.get('/api/jobs/pipeline', auth, (c) => c.json(service.jobPipeline(store, currentUser(c, 'employer').id)));
 
   app.post('/api/jobs', auth, async (c) => {
     const user = currentUser(c, 'employer');

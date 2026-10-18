@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { JobFeedItem, LikeItem, MatchDetail, MatchSummary } from '@jobster/shared';
+import type { AttentionSummary, JobFeedItem, JobPipeline, LikeItem, MatchDetail, MatchSummary } from '@jobster/shared';
 import { createApp } from '../src/app';
 import { seed, DEMO_CANDIDATE_EMAIL, DEMO_EMPLOYER_EMAIL, DEMO_PASSWORD } from '../src/seed';
 import { Store } from '../src/store';
@@ -210,6 +210,21 @@ describe('Jobster API: seeded demo world', () => {
 
     expect(await get<MatchSummary[]>('/matches', candidate)).toHaveLength(1);
     expect((await get<LikeItem[]>('/likes', employer)).length).toBe(3);
+  });
+
+  it('summarises what needs attention and how each role is going', async () => {
+    const candidate = await login(DEMO_CANDIDATE_EMAIL);
+    const employer = await login(DEMO_EMPLOYER_EMAIL);
+
+    // Brightwave spoke last in the seeded chat, so it's the candidate's turn.
+    expect(await get<AttentionSummary>('/me/summary', candidate)).toEqual({ likes: 2, yourTurn: 1, upcomingInterviews: 0 });
+    expect(await get<AttentionSummary>('/me/summary', employer)).toEqual({ likes: 3, yourTurn: 0, upcomingInterviews: 0 });
+
+    const pipeline = await get<JobPipeline[]>('/jobs/pipeline', employer);
+    const byTitle = Object.fromEntries(pipeline.map((p) => [p.job.title, p]));
+    expect(byTitle['Senior Frontend Engineer']).toMatchObject({ likedYou: 1, matches: 1, interviews: 0 });
+    expect(byTitle['Product Designer']).toMatchObject({ likedYou: 1, matches: 0 });
+    expect(byTitle['Data Analyst']!.toReview).toBeGreaterThan(0);
   });
 
   it('limits Standouts to one a day', async () => {

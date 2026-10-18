@@ -10,7 +10,7 @@ import {
   type MatchResult,
 } from '@jobster/shared';
 import { CompanyLogo } from './Avatar';
-import { MatchInsights } from './MatchInsights';
+import { MatchSummaryLine } from './MatchInsights';
 import { PromptPanel, Section } from './Section';
 
 interface Props {
@@ -20,12 +20,11 @@ interface Props {
   onLike?: (label: string) => void;
 }
 
-/** A job advert laid out as a Hinge-style profile: succinct, scannable, likeable in parts. */
+/** A job advert laid out as a Hinge-style profile: the essentials first, then prompts to react to. */
 export function JobProfile({ job, employer, match, onLike }: Props) {
   const matched = new Set((match?.matchedSkills ?? []).map(normaliseSkill));
   const skillChip = (skill: string) => (
     <li key={skill} className={`chip${matched.has(normaliseSkill(skill)) ? ' chip-match' : ''}`}>
-      {matched.has(normaliseSkill(skill)) && '✓ '}
       {skill}
     </li>
   );
@@ -34,28 +33,20 @@ export function JobProfile({ job, employer, match, onLike }: Props) {
     <div className="profile">
       <Section label="The role" onLike={onLike} className="panel-hero">
         <div className="hero-company">
-          <CompanyLogo employer={employer} size={44} />
-          <div>
-            <div className="hero-company-name">{employer.companyName}</div>
-            <div className="muted small">{employer.industry}</div>
-          </div>
+          <CompanyLogo employer={employer} size={40} />
+          <span>
+            <strong>{employer.companyName}</strong>
+            <span className="muted"> · {employer.industry}</span>
+          </span>
         </div>
         <h2 className="hero-title">{job.title}</h2>
-        <ul className="facts">
-          <li>💷 {formatSalary(job.salaryMin, job.salaryMax)}</li>
-          <li>📍 {job.location}</li>
-          <li>🏠 {WORK_MODE_LABELS[job.workMode]}</li>
-          <li>🕒 {JOB_TYPE_LABELS[job.jobType]}</li>
-          <li>📈 {SENIORITY_LABELS[job.seniority]}</li>
-        </ul>
+        <p className="facts">
+          <strong>{formatSalary(job.salaryMin, job.salaryMax)}</strong> · {job.location} · {WORK_MODE_LABELS[job.workMode]} ·{' '}
+          {JOB_TYPE_LABELS[job.jobType]} · {SENIORITY_LABELS[job.seniority]}
+        </p>
         <p className="summary">{job.summary}</p>
+        {match && <MatchSummaryLine match={match} />}
       </Section>
-
-      {match && (
-        <Section label="Why it’s a match" title="Why it’s a match">
-          <MatchInsights match={match} />
-        </Section>
-      )}
 
       {job.prompts[0] && <PromptPanel {...job.prompts[0]} onLike={onLike} />}
 
@@ -74,8 +65,12 @@ export function JobProfile({ job, employer, match, onLike }: Props) {
         <PromptPanel key={p.question} {...p} onLike={onLike} />
       ))}
 
-      {job.perks.length > 0 && (
-        <Section label="Perks" title="Perks" onLike={onLike}>
+      <Section label={`About ${employer.companyName}`} title={`About ${employer.companyName}`} onLike={onLike}>
+        <p>{employer.about}</p>
+        <p className="muted small">
+          {COMPANY_SIZE_LABELS[employer.size]} · {employer.location}
+        </p>
+        {job.perks.length > 0 && (
           <ul className="chips chips-soft">
             {job.perks.map((perk) => (
               <li key={perk} className="chip">
@@ -83,15 +78,7 @@ export function JobProfile({ job, employer, match, onLike }: Props) {
               </li>
             ))}
           </ul>
-        </Section>
-      )}
-
-      <Section label={`About ${employer.companyName}`} title={`About ${employer.companyName}`} onLike={onLike}>
-        <p className="prompt-a small-serif">{employer.tagline}</p>
-        <p>{employer.about}</p>
-        <p className="muted small">
-          {COMPANY_SIZE_LABELS[employer.size]} · {employer.location}
-        </p>
+        )}
       </Section>
     </div>
   );

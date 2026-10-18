@@ -59,3 +59,22 @@ export interface MatchDetail extends MatchSummary {
 }
 
 export type { Interview, Role };
+
+/** What needs the viewer's attention, for navigation badges. */
+export interface AttentionSummary {
+  /** People who liked you and are waiting on your decision. */
+  likes: number;
+  /** Matches where the other side spoke last. */
+  yourTurn: number;
+  /** Interviews booked for the future. */
+  upcomingInterviews: number;
+}
+
+/** How hiring is going for one of an employer's roles. */
+export interface JobPipeline {
+  job: Job;
+  toReview: number;
+  likedYou: number;
+  matches: number;
+  interviews: number;
+}

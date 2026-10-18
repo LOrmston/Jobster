@@ -2,31 +2,47 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { loginSchema, registerSchema, type Role } from '@jobster/shared';
 import { api } from '../api';
+import { Brand, BrandLogo } from '../components/Brand';
+import { BuildingIcon, PersonIcon } from '../components/icons';
 import { useSession } from '../session';
 
 export function Welcome() {
   return (
     <div className="welcome">
-      <div className="welcome-hero">
-        <span className="wordmark wordmark-large">Jobster</span>
-        <p className="welcome-tag">The job app designed to get you hired.</p>
-        <ul className="welcome-points">
-          <li>Swipe through roles matched to your experience</li>
-          <li>Like the bit that caught your eye — and say why</li>
-          <li>Match, chat and book the interview in one place</li>
-        </ul>
-      </div>
-      <div className="welcome-actions">
-        <Link to="/register?role=candidate" className="btn btn-light btn-block">
-          I’m looking for a job
-        </Link>
-        <Link to="/register?role=employer" className="btn btn-ghost-light btn-block">
-          I’m hiring
-        </Link>
-        <Link to="/login" className="link link-light">
-          I already have an account
-        </Link>
-      </div>
+      <section className="welcome-hero">
+        <BrandLogo className="welcome-logo" />
+        <h1 className="welcome-title">Job hunting, without the hunting.</h1>
+        <p className="welcome-lede">Short, honest job cards. A match score that explains itself. Like someone back and you’re straight into a chat and a booked interview.</p>
+        <div className="welcome-actions">
+          <Link to="/register?role=candidate" className="btn btn-primary btn-large">
+            I’m looking for a job
+          </Link>
+          <Link to="/register?role=employer" className="btn btn-ghost btn-large">
+            I’m hiring
+          </Link>
+        </div>
+        <p className="muted">
+          Already on Jobster? <Link to="/login">Sign in</Link>
+        </p>
+      </section>
+      <section className="welcome-how" aria-label="How it works">
+        <div className="how-card">
+          <h2>For job seekers</h2>
+          <ol>
+            <li>Swipe through roles ranked by how well they fit you</li>
+            <li>Like the part that caught your eye, and say why</li>
+            <li>Match, chat and pick an interview slot</li>
+          </ol>
+        </div>
+        <div className="how-card">
+          <h2>For employers</h2>
+          <ol>
+            <li>Post a role in a few minutes, with your dealbreakers</li>
+            <li>Review candidates who already fit, best first</li>
+            <li>Match, then offer interview times in one tap</li>
+          </ol>
+        </div>
+      </section>
     </div>
   );
 }
@@ -34,8 +50,8 @@ export function Welcome() {
 function AuthCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="auth">
-      <Link to="/" className="wordmark">
-        Jobster
+      <Link to="/" aria-label="Jobster home">
+        <Brand />
       </Link>
       <h1 className="page-title">{title}</h1>
       {children}
@@ -137,9 +153,7 @@ export function Register() {
       <div className="role-picker" role="radiogroup" aria-label="I am">
         {(['candidate', 'employer'] as const).map((r) => (
           <button key={r} type="button" role="radio" aria-checked={role === r} className={`role-option${role === r ? ' role-option-active' : ''}`} onClick={() => setRole(r)}>
-            <span className="role-emoji" aria-hidden>
-              {r === 'candidate' ? '🧑‍💻' : '🏢'}
-            </span>
+            <span className="role-icon">{r === 'candidate' ? <PersonIcon size={28} /> : <BuildingIcon size={28} />}</span>
             {r === 'candidate' ? 'Looking for a job' : 'Hiring'}
           </button>
         ))}

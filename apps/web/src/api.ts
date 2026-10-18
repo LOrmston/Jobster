@@ -1,4 +1,5 @@
 import type {
+  AttentionSummary,
   AuthResponse,
   CandidateFeedItem,
   CandidateProfile,
@@ -9,6 +10,7 @@ import type {
   Job,
   JobFeedItem,
   JobInput,
+  JobPipeline,
   LikeItem,
   Match,
   MatchDetail,
@@ -84,9 +86,11 @@ export const api = {
   login: (email: string, password: string) => request<AuthResponse>('POST', '/auth/login', { email, password }),
   logout: () => request<void>('POST', '/auth/logout'),
   me: () => request<Me>('GET', '/me'),
+  summary: () => request<AttentionSummary>('GET', '/me/summary'),
   saveProfile: (profile: CandidateProfileInput | EmployerProfileInput) => request<CandidateProfile | EmployerProfile>('PUT', '/me/profile', profile),
 
   myJobs: () => request<Job[]>('GET', '/jobs/mine'),
+  pipeline: () => request<JobPipeline[]>('GET', '/jobs/pipeline'),
   createJob: (job: JobInput) => request<Job>('POST', '/jobs', job),
   updateJob: (id: string, job: JobInput) => request<Job>('PUT', `/jobs/${id}`, job),
 

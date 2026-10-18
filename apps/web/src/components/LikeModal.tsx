@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
-import { HeartIcon, StarIcon } from './Section';
+import { HeartIcon, StarIcon } from './icons';
 
 interface Props {
   section: string;

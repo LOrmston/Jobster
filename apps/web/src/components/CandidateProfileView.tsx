@@ -8,44 +8,35 @@ import {
   type MatchResult,
 } from '@jobster/shared';
 import { CandidateAvatar } from './Avatar';
-import { MatchInsights } from './MatchInsights';
+import { MatchSummaryLine } from './MatchInsights';
 import { PromptPanel, Section } from './Section';
 
 interface Props {
   candidate: CandidateProfile;
   match?: MatchResult;
-  /** The job the employer is viewing this candidate for. */
-  jobTitle?: string;
   onLike?: (label: string) => void;
 }
 
-export function CandidateProfileView({ candidate, match, jobTitle, onLike }: Props) {
+export function CandidateProfileView({ candidate, match, onLike }: Props) {
   const matched = new Set((match?.matchedSkills ?? []).map(normaliseSkill));
 
   return (
     <div className="profile">
       <Section label="Their headline" onLike={onLike} className="panel-hero">
         <div className="hero-person">
-          <CandidateAvatar candidate={candidate} size={88} />
+          <CandidateAvatar candidate={candidate} size={72} />
           <div>
             <h2 className="hero-title">{candidate.name}</h2>
-            <p className="summary">{candidate.headline}</p>
+            <p className="muted">{candidate.location}</p>
           </div>
         </div>
-        <ul className="facts">
-          <li>📍 {candidate.location}</li>
-          <li>🧭 {candidate.yearsExperience} yrs</li>
-          <li>📈 {SENIORITY_LABELS[candidate.seniority]}</li>
-          <li>💷 {formatSalary(candidate.salaryMin)}</li>
-          <li>🏠 {candidate.workModes.map((m) => WORK_MODE_LABELS[m]).join(' / ')}</li>
-        </ul>
+        <p className="summary">{candidate.headline}</p>
+        <p className="facts">
+          <strong>{candidate.yearsExperience} yrs</strong> · {SENIORITY_LABELS[candidate.seniority]} · {formatSalary(candidate.salaryMin)} ·{' '}
+          {candidate.workModes.map((m) => WORK_MODE_LABELS[m]).join(' / ')}
+        </p>
+        {match && <MatchSummaryLine match={match} />}
       </Section>
-
-      {match && (
-        <Section label="Why it’s a match" title={jobTitle ? `Fit for ${jobTitle}` : 'Why it’s a match'}>
-          <MatchInsights match={match} />
-        </Section>
-      )}
 
       {candidate.prompts[0] && <PromptPanel {...candidate.prompts[0]} onLike={onLike} />}
 
@@ -53,7 +44,6 @@ export function CandidateProfileView({ candidate, match, jobTitle, onLike }: Pro
         <ul className="chips">
           {candidate.skills.map((skill) => (
             <li key={skill} className={`chip${matched.has(normaliseSkill(skill)) ? ' chip-match' : ''}`}>
-              {matched.has(normaliseSkill(skill)) && '✓ '}
               {skill}
             </li>
           ))}
@@ -81,20 +71,14 @@ export function CandidateProfileView({ candidate, match, jobTitle, onLike }: Pro
       )}
 
       <Section label="Looking for" title="Looking for">
-        <ul className="chips chips-soft">
-          {candidate.jobTypes.map((t) => (
-            <li key={t} className="chip">
-              {JOB_TYPE_LABELS[t]}
-            </li>
-          ))}
-          {candidate.industries.map((i) => (
-            <li key={i} className="chip">
-              {i}
-            </li>
-          ))}
-          {candidate.willingToRelocate && <li className="chip">Open to relocating</li>}
-          <li className="chip">{candidate.rightToWork ? 'Right to work in the UK' : 'Needs sponsorship'}</li>
-        </ul>
+        <p>
+          {candidate.jobTypes.map((t) => JOB_TYPE_LABELS[t]).join(', ')}
+          {candidate.industries.length > 0 && ` in ${candidate.industries.join(', ')}`}.
+        </p>
+        <p className="muted small">
+          {candidate.rightToWork ? 'Has the right to work in the UK' : 'Needs visa sponsorship'}
+          {candidate.willingToRelocate && ' · Open to relocating'}
+        </p>
       </Section>
     </div>
   );

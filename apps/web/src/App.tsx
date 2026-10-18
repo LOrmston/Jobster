@@ -4,8 +4,8 @@ import { Login, Register, Welcome } from './pages/Auth';
 import { Discover } from './pages/Discover';
 import { JobEditor, Jobs } from './pages/Jobs';
 import { Likes } from './pages/Likes';
-import { MatchChat } from './pages/MatchChat';
-import { Matches } from './pages/Matches';
+import { MatchChatRoute } from './pages/MatchChat';
+import { Matches, NoChatSelected } from './pages/Matches';
 import { Onboarding } from './pages/Onboarding';
 import { Profile } from './pages/Profile';
 import { useSession } from './session';
@@ -40,8 +40,10 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<Discover />} />
         <Route path="likes" element={<Likes />} />
-        <Route path="matches" element={<Matches />} />
-        <Route path="matches/:id" element={<MatchChat />} />
+        <Route path="matches" element={<Matches />}>
+          <Route index element={<NoChatSelected />} />
+          <Route path=":id" element={<MatchChatRoute />} />
+        </Route>
         <Route path="profile" element={<Profile />} />
         {user!.role === 'employer' && (
           <>

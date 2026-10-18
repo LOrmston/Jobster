@@ -1,4 +1,4 @@
-import { CrossIcon, HeartIcon, StarIcon } from './Section';
+import { CrossIcon, HeartIcon, StarIcon } from './icons';
 
 interface Props {
   onPass(): void;

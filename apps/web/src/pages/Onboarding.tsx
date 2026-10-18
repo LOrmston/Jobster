@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { Brand } from '../components/Brand';
 import { CandidateForm } from '../forms/CandidateForm';
 import { EmployerForm } from '../forms/EmployerForm';
 import { useSession } from '../session';
@@ -22,7 +23,7 @@ export function Onboarding() {
 
   return (
     <div className="page page-narrow">
-      <span className="wordmark">Jobster</span>
+      <Brand />
       <h1 className="page-title">{isCandidate ? 'Let’s build your profile' : 'Tell candidates about you'}</h1>
       <p className="muted">
         {isCandidate
