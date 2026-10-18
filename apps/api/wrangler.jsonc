@@ -1,0 +1,23 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "jobster",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // The built web app. Anything that isn't a file falls back to index.html
+  // so client-side routes work, except /api/*, which goes to the Worker.
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "DB", "class_name": "JobsterDatabase" }]
+  },
+  // Fills an empty database with demo data so a fresh deploy is ready to try.
+  // The demo logins are public, so set this to "false" before a real launch.
+  "vars": { "SEED_DEMO_DATA": "true" },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["JobsterDatabase"] }],
+  "observability": { "enabled": true }
+}

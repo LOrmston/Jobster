@@ -1,6 +1,3 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { randomUUID } from 'node:crypto';
 import type { CandidateProfile, EmployerProfile, Job, Match, Message, Swipe, User } from '@jobster/shared';
 
 export interface StoredUser extends User {
@@ -24,7 +21,9 @@ export interface DbShape {
   messages: Message[];
 }
 
-const empty = (): DbShape => ({
+export const COLLECTIONS = ['users', 'sessions', 'candidates', 'employers', 'jobs', 'swipes', 'matches', 'messages'] as const;
+
+export const emptyDb = (): DbShape => ({
   users: [],
   sessions: [],
   candidates: [],
@@ -36,15 +35,20 @@ const empty = (): DbShape => ({
 });
 
 /**
- * A small JSON-file store so the MVP runs with zero infrastructure. Every
- * read and write goes through this class, so swapping it for Postgres later
- * only touches this file and the route handlers' calls into it.
+ * The in-memory database every request works against. Where the data lives
+ * between requests is up to `persist`: a JSON file under Node
+ * (file-store.ts) or a Durable Object on Cloudflare (worker.ts). Moving to
+ * Postgres or D1 later means replacing this class and the queries in
+ * service.ts.
  */
 export class Store {
   data: DbShape;
 
-  constructor(private readonly file?: string) {
-    this.data = file && existsSync(file) ? { ...empty(), ...JSON.parse(readFileSync(file, 'utf8')) } : empty();
+  constructor(
+    initial: Partial<DbShape> = {},
+    private readonly persist?: (data: DbShape) => void,
+  ) {
+    this.data = { ...emptyDb(), ...initial };
   }
 
   get isEmpty(): boolean {
@@ -52,19 +56,15 @@ export class Store {
   }
 
   reset(): void {
-    this.data = empty();
+    this.data = emptyDb();
   }
 
   save(): void {
-    if (!this.file) return;
-    mkdirSync(dirname(this.file), { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify(this.data, null, 2));
-    renameSync(tmp, this.file);
+    this.persist?.(this.data);
   }
 
   static id(): string {
-    return randomUUID();
+    return crypto.randomUUID();
   }
 
   user(id: string) {

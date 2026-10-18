@@ -1,9 +1,12 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { Context } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { ZodType, ZodTypeDef } from 'zod';
+
+const MAX_BODY_BYTES = 100_000;
 
 export class HttpError extends Error {
   constructor(
-    readonly status: number,
+    readonly status: ContentfulStatusCode,
     message: string,
   ) {
     super(message);
@@ -20,15 +23,20 @@ export function parse<T>(schema: ZodType<T, ZodTypeDef, unknown>, body: unknown)
   return result.data;
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
-  if (err instanceof HttpError) {
-    res.status(err.status).json({ error: err.message });
-    return;
+/** Read a JSON request body, treating an empty body as `{}`. */
+export async function readJson(c: Context): Promise<unknown> {
+  const text = await c.req.text();
+  if (text.length > MAX_BODY_BYTES) throw new HttpError(413, 'Request is too large');
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new HttpError(400, 'Invalid JSON');
   }
-  if (err instanceof SyntaxError && 'body' in err) {
-    res.status(400).json({ error: 'Invalid JSON' });
-    return;
-  }
+}
+
+export function errorHandler(err: Error, c: Context) {
+  if (err instanceof HttpError) return c.json({ error: err.message }, err.status);
   console.error(err);
-  res.status(500).json({ error: 'Something went wrong' });
+  return c.json({ error: 'Something went wrong' }, 500);
 }

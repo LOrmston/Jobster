@@ -435,12 +435,12 @@ const employers: EmployerSeed[] = [
   },
 ];
 
-function addUser(store: Store, email: string, role: Role): StoredUser {
+function addUser(store: Store, email: string, role: Role, passwordHash: string): StoredUser {
   const user: StoredUser = {
     id: Store.id(),
     email,
     role,
-    passwordHash: hashPassword(DEMO_PASSWORD),
+    passwordHash,
     createdAt: new Date().toISOString(),
   };
   store.data.users.push(user);
@@ -451,16 +451,19 @@ function addUser(store: Store, email: string, role: Role): StoredUser {
 export function seed(store: Store): void {
   store.reset();
   const byEmail = new Map<string, StoredUser>();
+  // Every demo account shares a password, so hash it once: hashing is
+  // deliberately slow, and Workers bill for CPU time.
+  const passwordHash = hashPassword(DEMO_PASSWORD);
 
   for (const { email, ...profile } of candidates) {
-    const user = addUser(store, email, 'candidate');
+    const user = addUser(store, email, 'candidate', passwordHash);
     byEmail.set(email, user);
     store.data.candidates.push({ ...profile, userId: user.id });
   }
 
   const jobsByTitle = new Map<string, Job>();
   for (const { email, jobs, ...profile } of employers) {
-    const user = addUser(store, email, 'employer');
+    const user = addUser(store, email, 'employer', passwordHash);
     byEmail.set(email, user);
     store.data.employers.push({ ...profile, userId: user.id });
     for (const job of jobs) {

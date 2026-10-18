@@ -13,7 +13,9 @@
     "start": "npm run start -w @jobster/api",
     "seed": "npm run seed -w @jobster/api",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "deploy": "npm run build && npm run deploy -w @jobster/api",
+    "cf:dev": "npm run build && npm run cf:dev -w @jobster/api"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

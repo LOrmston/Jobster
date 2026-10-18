@@ -1,26 +1,13 @@
-import type { AddressInfo } from 'node:net';
-import type { Server } from 'node:http';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { JobFeedItem, LikeItem, MatchDetail, MatchSummary } from '@jobster/shared';
 import { createApp } from '../src/app';
 import { seed, DEMO_CANDIDATE_EMAIL, DEMO_EMPLOYER_EMAIL, DEMO_PASSWORD } from '../src/seed';
 import { Store } from '../src/store';
 
-let server: Server;
-let base: string;
-
-beforeAll(async () => {
-  server = createApp(new Store()).listen(0);
-  await new Promise((resolve) => server.once('listening', resolve));
-  base = `http://localhost:${(server.address() as AddressInfo).port}/api`;
-});
-
-afterAll(() => {
-  server.close();
-});
+const app = createApp(new Store());
 
 async function call<T = unknown>(method: string, path: string, body?: unknown, token?: string) {
-  const res = await fetch(base + path, {
+  const res = await app.request(`/api${path}`, {
     method,
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -184,20 +171,16 @@ describe('Jobster API: swipe to interview', () => {
 });
 
 describe('Jobster API: seeded demo world', () => {
-  let seeded: Server;
-  let url: string;
+  let seeded: ReturnType<typeof createApp>;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     const store = new Store();
     seed(store);
-    seeded = createApp(store).listen(0);
-    await new Promise((resolve) => seeded.once('listening', resolve));
-    url = `http://localhost:${(seeded.address() as AddressInfo).port}/api`;
+    seeded = createApp(store);
   });
 
-  afterAll(() => {
-    seeded.close();
-  });
+  const fetch = (path: string, init?: RequestInit) => seeded.request(path, init);
+  const url = '/api';
 
   const login = async (email: string) => {
     const res = await fetch(`${url}/auth/login`, {

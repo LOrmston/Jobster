@@ -1,8 +1,10 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import type { NextFunction, Request, Response } from 'express';
+import type { Context, MiddlewareHandler } from 'hono';
 import type { Role } from '@jobster/shared';
 import { HttpError } from './http';
 import type { Store, StoredUser } from './store';
+
+export type AppEnv = { Variables: { user: StoredUser; token: string } };
 
 export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString('hex');
@@ -29,21 +31,21 @@ export function publicUser({ passwordHash: _, ...user }: StoredUser) {
   return user;
 }
 
-/** Resolve the bearer token to a user and stash it on res.locals.user. */
-export function requireAuth(store: Store) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const token = req.header('authorization')?.replace(/^Bearer\s+/i, '');
+/** Resolve the bearer token to a user and make it available as c.get('user'). */
+export function requireAuth(store: Store): MiddlewareHandler<AppEnv> {
+  return async (c, next) => {
+    const token = c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const session = token ? store.data.sessions.find((s) => s.token === token) : undefined;
     const user = session ? store.user(session.userId) : undefined;
-    if (!user) throw new HttpError(401, 'Please sign in');
-    res.locals.user = user;
-    res.locals.token = token;
-    next();
+    if (!user || !token) throw new HttpError(401, 'Please sign in');
+    c.set('user', user);
+    c.set('token', token);
+    await next();
   };
 }
 
-export function currentUser(res: Response, role?: Role): StoredUser {
-  const user = res.locals.user as StoredUser;
+export function currentUser(c: Context<AppEnv>, role?: Role): StoredUser {
+  const user = c.get('user');
   if (role && user.role !== role) throw new HttpError(403, `Only ${role}s can do that`);
   return user;
 }

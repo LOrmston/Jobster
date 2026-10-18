@@ -35,17 +35,22 @@ A **dealbreaker** from either side takes the pair out of both feeds. Feeds are s
 ```
 jobster/
 ├── packages/shared   # Types, validation (zod), matching algorithm, labels. Plain TypeScript, no DOM or Node APIs
-├── apps/api          # Node + Express REST API
+├── apps/api          # REST API (Hono), runs on Node locally and on Cloudflare Workers in production
 └── apps/web          # React + Vite web app, mobile-first
 ```
 
 The project is set up for a **mobile app later**:
 
 - All business logic (matching, validation, types, API response shapes) lives in `@jobster/shared`, which uses neither DOM nor Node APIs. A React Native / Expo app can import it unchanged.
-- The API is plain REST with bearer tokens, which suits native clients as well as the browser.
+- The API is plain REST with bearer tokens, which suits native clients as well as the browser. It only uses web-standard `Request`/`Response`, so the same code runs under Node and on Cloudflare.
 - The web UI is already laid out as a phone-sized, touch-first app: swipe gestures, a bottom tab bar and safe-area insets.
 
-**Storage:** in this MVP the API stores everything in a JSON file (`apps/api/data/db.json`), so it runs with no database to set up. All reads and writes go through `apps/api/src/store.ts`, so moving to Postgres later means changing that file and the queries in `service.ts`.
+**Storage:** the API works against an in-memory `Store` (`apps/api/src/store.ts`), and where the data is saved depends on where it runs:
+
+- **Locally** it's a JSON file (`apps/api/data/db.json`), so there's nothing to set up.
+- **On Cloudflare** it's a single [Durable Object](https://developers.cloudflare.com/durable-objects/) with SQLite storage (`apps/api/src/worker.ts`). Each record is its own row and only changed rows are written.
+
+This fits an MVP: one Durable Object handles requests one at a time, just like the single Node server. For real scale, move to a proper database (Cloudflare D1 or Postgres). That means replacing `store.ts` and the queries in `service.ts`; the routes and the web app stay the same.
 
 ### API
 
@@ -84,8 +89,38 @@ Both accounts start with likes waiting and one active match.
 npm test           # Matching algorithm unit tests and an API test from swipe to interview
 npm run typecheck
 npm run seed       # Reset the demo data
-npm run build && npm start   # Production: the API serves the built web app on :4000
+npm run build && npm start   # Production on Node: the API serves the built web app on :4000
+npm run cf:dev     # Run the Cloudflare version locally on http://localhost:8787
 ```
+
+## Deploying to Cloudflare
+
+Cloudflare hosts both halves on one domain: the web app as static assets and the API as a Worker, with the data in a Durable Object. The Workers **free plan** covers trying it out. GitHub Pages can't host Jobster on its own, because it only serves static files and can't run the API.
+
+### Automatic deploys from GitHub (recommended)
+
+`.github/workflows/ci.yml` runs the type checks, tests and build on every push and pull request. When `main` changes and the checks pass, it deploys to Cloudflare. To switch that on:
+
+1. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com).
+2. Create an API token under **My Profile → API Tokens → Create Token**, using the **Edit Cloudflare Workers** template.
+3. Find your **Account ID** on the Workers & Pages overview page.
+4. In GitHub, open **Settings → Secrets and variables → Actions** and add two repository secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+5. Merge to `main`. The app goes live at `https://jobster.<your-subdomain>.workers.dev`.
+
+Until the secrets are added, the deploy step is skipped with a warning and CI still runs.
+
+### Deploying from your own computer
+
+```bash
+npx wrangler login     # one-off: opens a browser to sign in to Cloudflare
+npm run deploy
+```
+
+### Before a real launch
+
+- **Turn off the demo data.** A fresh deploy fills itself with the demo world, and the demo logins are public. Set `SEED_DEMO_DATA` to `"false"` in `apps/api/wrangler.jsonc` first. The setting only affects an empty database, so data that's already there stays until you clear it.
+- **Consider Workers Paid ($5/month).** Passwords are hashed with scrypt, which is deliberately slow (about 60 ms of CPU per sign-up or sign-in). The free plan allows 10 ms of CPU per request, so sign-ins may sometimes fail under it. The paid plan's limits are far higher.
+- **Custom domain:** add one under the Worker's **Settings → Domains & Routes** in the Cloudflare dashboard.
 
 ## What to build next
 
