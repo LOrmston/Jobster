@@ -90,7 +90,7 @@ npm test           # Matching algorithm unit tests and an API test from swipe to
 npm run typecheck
 npm run seed       # Reset the demo data
 npm run build && npm start   # Production on Node: the API serves the built web app on :4000
-npm run cf:dev     # Run the Cloudflare version locally on http://localhost:8787
+npm run cf:dev     # Run the Cloudflare version locally on http://localhost:8787 (builds the web app first)
 ```
 
 ## Deploying to Cloudflare
@@ -99,15 +99,14 @@ Cloudflare hosts both halves on one domain: the web app as static assets and the
 
 ### Automatic deploys from GitHub (recommended)
 
-`.github/workflows/ci.yml` runs the type checks, tests and build on every push and pull request. When `main` changes and the checks pass, it deploys to Cloudflare. To switch that on:
+Use Cloudflare's Git integration (Workers Builds) to build and deploy on every push:
 
-1. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com).
-2. Create an API token under **My Profile → API Tokens → Create Token**, using the **Edit Cloudflare Workers** template.
-3. Find your **Account ID** on the Workers & Pages overview page.
-4. In GitHub, open **Settings → Secrets and variables → Actions** and add two repository secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-5. Merge to `main`. The app goes live at `https://jobster.<your-subdomain>.workers.dev`.
+1. In the Cloudflare dashboard, open **Workers & Pages → Create → Import a repository** and pick this repo.
+2. Name the Worker **`jobster`**. It must match `name` in `wrangler.jsonc`.
+3. Keep the default settings: root directory `/` and deploy command `npx wrangler deploy`. You don't need a build command, because `wrangler.jsonc` builds the web app before every deploy.
+4. Under **Settings → Build**, choose your production branch.
 
-Until the secrets are added, the deploy step is skipped with a warning and CI still runs.
+Each push to that branch then deploys to `https://jobster.<your-subdomain>.workers.dev`. Separately, GitHub Actions (`.github/workflows/ci.yml`) runs the type checks, tests and build on every push and pull request.
 
 ### Deploying from your own computer
 

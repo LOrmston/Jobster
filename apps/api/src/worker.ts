@@ -91,7 +91,7 @@ export class JobsterDatabase extends DurableObject<Env> {
 
 export default {
   fetch(request, env) {
-    // wrangler.jsonc routes only /api/* here; everything else is a static asset.
+    // wrangler.jsonc (at the repo root) routes only /api/* here; everything else is a static asset.
     if (!new URL(request.url).pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     return env.DB.get(env.DB.idFromName('jobster')).fetch(request);
   },

@@ -7,8 +7,6 @@
     "dev": "tsx watch src/index.ts",
     "start": "NODE_ENV=production tsx src/index.ts",
     "seed": "tsx src/seed-cli.ts",
-    "cf:dev": "wrangler dev",
-    "deploy": "wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -19,7 +17,6 @@
     "tsx": "^4.19.2"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "wrangler": "~4.145.0"
+    "@types/node": "^22.10.0"
   }
 }
